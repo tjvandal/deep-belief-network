@@ -1,10 +1,17 @@
-__author__ = 'thomas.vandal'
+__author__ = 'TJ Vandal'
+'''
+DeepBeliefNet chains Restricted Boltzmann Machines together and trains a Deep Belief Network.
+The last layer is the only layer which will be trained with labels.
+
+Works is based on Geoffrey Hinton's matlab code.
+'''
 
 from rbm import RBM
 import numpy
+import json
 
 class DeepBeliefNet:
-    def __init__(self, num_layers, components, batch_size, learning_rate, bias_learning_rate, epochs, sparsity_rate=0.9):
+    def __init__(self, num_layers, components, batch_size=100, learning_rate=0.1, bias_learning_rate=0.1, epochs=20, sparsity_rate=None):
         self.sparsity_rate = sparsity_rate
         try:
             self.num_layers = int(num_layers)
@@ -51,6 +58,11 @@ class DeepBeliefNet:
                     "Number of Epochs (%i) must be equal to the number of layers, %i" % (len(epochs), layers))
             self.epochs = epochs
 
+        self.plot_weights = False
+        self.plot_histograms = False
+
+
+
     ## if labels are given then we will use them to train the top layer
     def fit_network(self, X, labels=None):
         if labels is None:
@@ -68,24 +80,24 @@ class DeepBeliefNet:
 
             model = RBM(n_components=self.components[j], batch_size=self.batch_size[j],
                         learning_rate=self.learning_rate[j], regularization_mu=self.sparsity_rate,
-                        n_iter=self.epochs[j], verbose=True, learning_rate_bias=self.bias_learning_rate[j])
+                        n_iter=self.epochs[j], verbose=True, learning_rate_bias=self.bias_learning_rate[j],
+                        plot_weights=self.plot_weights, plot_histograms=self.plot_histograms, phi=0.99)
 
             if j + 1 == self.num_layers and labels is not None:
-                model.fit(temp_X, labels)
+                model.fit(numpy.asarray(temp_X), numpy.asarray(labels))
             else:
-                model.fit(temp_X)
+                model.fit(numpy.asarray(temp_X))
 
-            temp_X = model.transform(temp_X)
+            temp_X = model._mean_hiddens(temp_X)  # hidden layer given visable units
             print "Trained Layer %i\n" % (j + 1)
 
             DeepBeliefNet.layers.append(model)
 
-    def results(self, test_data, test_labels, label_column):
+    def results(self, test_data, test_labels, label_column, write_file=None):
         from sklearn.metrics import roc_curve, roc_auc_score, precision_recall_curve
         layer_data = test_data
         for layer in self.layers[:-1]:
-            print "layerdata: ", layer_data.shape, "\tcomponents:", layer.components_.T.shape, "\tintercepts:", layer.intercept_hidden_.shape
-            p = numpy.dot(layer_data, layer.components_.T) + layer.intercept_hidden_
+            p = numpy.dot(layer_data, layer.components_) + layer.intercept_hidden_
             layer_data = 1 / (1 + numpy.exp(-p))
 
         inter = numpy.zeros(test_labels.shape)
@@ -95,31 +107,28 @@ class DeepBeliefNet:
             targets[:, j] = 1
 
             vis_bias_sum = numpy.dot(layer_data, layer.intercept_visible_.T) + numpy.dot(targets, layer.target_bias_.T)
-            prod = layer.intercept_hidden_.T + numpy.dot(layer_data, layer.components_.T) \
-                  + numpy.dot(targets, layer.target_components_.T)
-
+            prod = layer.intercept_hidden_.T + numpy.dot(layer_data, layer.components_) + numpy.dot(targets, layer.target_components_)
             inter[:, j] = numpy.sum(numpy.log(1 + numpy.exp(prod)), axis=1) + vis_bias_sum
+      
+        normalized_inter = inter / inter.sum(axis=1).reshape(len(inter), 1)
+        max_row = normalized_inter.argmax(axis=1)
+        lab = test_labels.argmax(axis=1)
 
-        max_row = inter.argmax(axis=1)
-        temp = test_labels.argmax(axis=1)
-        prediction = numpy.zeros(test_labels.shape[0])
+        print "histgram of prediction", numpy.histogram(max_row, bins=len(numpy.unique(max_row)))
+        print "percentage classified correctly", sum(lab == max_row) * 1.0 / len(lab)
 
-        ## maxrow is the argmax which gives us the column with had the largest value
-        # if this is equal to the test column than the prediction is true
-        print "max row", max_row
-        #prediction[label_column == max_row] = 1
-        #print "inter", inter
-        print "histgram of prediction", numpy.histogram(max_row)
-        #print test_labels
-        print "percentage classified correctly", sum(test_labels[:, label_column] == max_row) * 1.0 / len(temp)
+        fpr, tpr, thresholds = roc_curve(test_labels[:, label_column], normalized_inter[:, label_column])
+        auc = roc_auc_score(test_labels[:, label_column], normalized_inter[:, label_column])
+        precision, recall, pr_thres = precision_recall_curve(test_labels[:, label_column], normalized_inter[:, label_column])
 
+        DeepBeliefNet.res = {"fpr": fpr.tolist(), "tpr": tpr.tolist(), "precision": precision.tolist(),
+                             "recall": recall.tolist(), 'auc': auc}
 
-        fpr, tpr, thresholds = roc_curve(test_labels[:, label_column], prediction)
-        auc = roc_auc_score(test_labels[:, label_column], prediction)
-        precision, recall, pr_thres = precision_recall_curve(test_labels[:, label_column], prediction)
+        if write_file:
+            with open(write_file, 'w') as write:
+                json.dump(DeepBeliefNet.res, write)
 
-
-        return {"fpr": fpr, "tpr": tpr, "auc": auc, "precision": precision, "recall": recall}
+        return DeepBeliefNet.res
 
     def save_network(self, writefile):
         import pickle

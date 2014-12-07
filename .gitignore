@@ -1,1 +1,3 @@
 *.pyc
+examples/data/*ubyte
+examples/data/*.json
