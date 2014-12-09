@@ -19,7 +19,7 @@ class DeepBeliefNet:
             raise TypeError("Number of layers must be an a number.")
 
         try:
-            self.sparsity_rate = [float(sparsity_rate)] * self.num_layers
+            self.sparsity_rate = [sparsity_rate] * self.num_layers
         except TypeError:
             if len(sparsity_rate) != self.num_layers:
                 raise Exception(

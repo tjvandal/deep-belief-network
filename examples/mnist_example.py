@@ -29,8 +29,9 @@ mnist_data_files = {'training_images': 'http://yann.lecun.com/exdb/mnist/train-i
 for key in mnist_data_files:
     url = mnist_data_files[key]
     filename = os.path.basename(url)
-    if filename not in os.listdir(mndata_dir):
-        r = requests.get(mnist_data_files[key], stream=True)
+    if filename.split(".")[0] not in os.listdir(mndata_dir):
+        print "Downloading File: %s" % mnist_data_files[key]
+	r = requests.get(mnist_data_files[key], stream=True)
         compressed_file=StringIO.StringIO()
         compressed_file.write(r.content)
         compressed_file.seek(0)
