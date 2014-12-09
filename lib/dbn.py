@@ -11,12 +11,20 @@ import numpy
 import json
 
 class DeepBeliefNet:
-    def __init__(self, num_layers, components, batch_size=100, learning_rate=0.1, bias_learning_rate=0.1, epochs=20, sparsity_rate=None):
-        self.sparsity_rate = sparsity_rate
+    def __init__(self, num_layers, components, batch_size=100, learning_rate=0.1, bias_learning_rate=0.1, epochs=20,
+                 sparsity_rate=None, phi_sparsity=0.99):
         try:
             self.num_layers = int(num_layers)
         except TypeError:
             raise TypeError("Number of layers must be an a number.")
+
+        try:
+            self.sparsity_rate = [float(sparsity_rate)] * self.num_layers
+        except TypeError:
+            if len(sparsity_rate) != self.num_layers:
+                raise Exception(
+                    "Number of Components (%i) must be equal to the number of layers, %i" % (len(components), layers))
+            self.sparsity_rate = sparsity_rate
 
         try:
             self.components = [int(components)] * self.num_layers
@@ -60,6 +68,7 @@ class DeepBeliefNet:
 
         self.plot_weights = False
         self.plot_histograms = False
+        self.phi = phi_sparsity
 
 
 
@@ -77,11 +86,15 @@ class DeepBeliefNet:
             print "learning_rate: %0.3f" % self.learning_rate[j]
             print "bias_learning_rate: %0.3f" % self.bias_learning_rate[j]
             print "epochs: %i" % self.epochs[j]
+            print "Sparsity: %s" % str(self.sparsity_rate[j])
+            print "Sparsity Phi: %s" % str(self.phi)
+            if j != 0:
+                self.plot_weights = False
 
             model = RBM(n_components=self.components[j], batch_size=self.batch_size[j],
-                        learning_rate=self.learning_rate[j], regularization_mu=self.sparsity_rate,
+                        learning_rate=self.learning_rate[j], regularization_mu=self.sparsity_rate[j],
                         n_iter=self.epochs[j], verbose=True, learning_rate_bias=self.bias_learning_rate[j],
-                        plot_weights=self.plot_weights, plot_histograms=self.plot_histograms, phi=0.99)
+                        plot_weights=self.plot_weights, plot_histograms=self.plot_histograms, phi=self.phi)
 
             if j + 1 == self.num_layers and labels is not None:
                 model.fit(numpy.asarray(temp_X), numpy.asarray(labels))

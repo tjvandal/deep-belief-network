@@ -36,15 +36,15 @@ class RBM(BernoulliRBM):
             self.learning_rate_bias = learning_rate
         self.weight_cost = weight_cost
         self.regularization_mu = regularization_mu
-        self.cd_iter = int(n_iter / 20) + 1
+        self.cd_iter = 5     #int(n_iter / 20) + 1
         self.phi = phi
 
         self.plotweights = plot_weights
         self.plothist = plot_histograms
         self.plot_reconstructed = plot_reconstructed
-
         if self.regularization_mu is not None and (self.regularization_mu <= 0 or self.regularization_mu >= 1):
-            raise ValueError("Regularization must between 0 and 1")
+            err = "Regularization (%s) must between 0 and 1" % str(self.regularization_mu)
+            raise ValueError(err)
 
     def fit(self, X, targets=None):
         """Fit the model to the data X.
@@ -104,16 +104,17 @@ class RBM(BernoulliRBM):
             self.error_terms[iteration-1] = errsum
             if verbose and iteration % verbose_freq == 0:
                 if self.plothist:
+                    h_pos_ = self._mean_hiddens(X)
                     for j, arr in enumerate([self.components_, self.intercept_hidden_, self.intercept_visible_]):
                         hist, bins = numpy.histogram(arr, bins=50)
                         pyplot.subplot2grid((5, 1), (j, 0))
                         width = 0.7 * (bins[1] - bins[0])
                         center = (bins[:-1] + bins[1:]) / 2
-                        pyplot.bar(center, hist, align='center', width=width, hold=False)
+                        pyplot.bar(center, 1.*hist/sum(hist), align='center', width=width, hold=False)
                         pyplot.draw()
 
                     pyplot.subplot2grid((5, 1), (3, 0), rowspan=2)
-                    self.plot_hidden_units(X[:10])
+                    self.plot_hidden_units(X)
 
                 if self.plotweights:
                     self.plot_weights(16)
@@ -149,6 +150,12 @@ class RBM(BernoulliRBM):
 
         ######## VISABLE POSITIVE TO HIDDEN POSITIVE PHASE  ##########
         h_pos = self._mean_hiddens(v_pos, targets)
+        h_pos_states = h_pos > numpy.random.random(h_pos.shape)
+        if self.regularization_mu is not None:
+            ## force sparsity by pressuring hidden units to turn on ##
+            sparse_h_pos = self.regularization(h_pos, 1.-self.regularization_mu, axis=0)
+            h_pos = self.phi * sparse_h_pos + (1 - self.phi) * h_pos
+            h_pos_states = h_pos
 
         ######## HIDDEN POSITIVE TO VISABLE NEGATIVE PHASE  ##########
         batch_count = len(v_pos)
@@ -159,10 +166,9 @@ class RBM(BernoulliRBM):
 
         if targets.sum() != 0:
             temp_h_pos = h_pos
+            pos_hid_states = h_pos_states
             for j in range(self.cd_iter):
                 ## positive hidden label states from previous positive hidden probabilities
-                pos_hid_states = temp_h_pos > numpy.random.random(size=h_pos.shape)
-
                 neg_lab_prob = numpy.exp(numpy.dot(pos_hid_states, self.target_components_.T) + self.target_bias_matrix)
                 neg_lab_prob = neg_lab_prob / neg_lab_prob.sum(axis=1).reshape(batch_count, 1)
 
@@ -181,20 +187,17 @@ class RBM(BernoulliRBM):
                 v_neg = expit(numpy.dot(pos_hid_states, self.components_.T) + self.intercept_visible_)
                 v_neg_states = v_neg > numpy.random.uniform(0., 1., v_neg.shape)   ## given _sample_visibles this line is not needed
                 temp_h_pos = self._mean_hiddens(v_neg_states, neg_lab_states)
+                if self.regularization_mu is not None:
+                    ## force sparsity by pressuring hidden units to turn on ##
+                    sparse_h_pos = self.regularization(temp_h_pos, 1-self.regularization_mu, axis=0)
+                    temp_h_pos = self.phi * sparse_h_pos + (1 - self.phi) * temp_h_pos
+                    pos_hid_states = temp_h_pos > numpy.random.random(h_pos.shape)
+                else:
+                    pos_hid_states = temp_h_pos > numpy.random.random(h_pos.shape)
 
             h_neg = temp_h_pos
+
         else:
-            h_pos_states = h_pos > numpy.random.random(h_pos.shape)
-            if self.regularization_mu is not None:
-                ## force sparsity by pressuring hidden units to turn on ##
-                sparse_h_pos = self.regularization(h_pos, self.regularization_mu, axis=0)
-
-                # this will force selectivity
-                #sparse_h_pos = self.regularization(sparse_h_pos, self.regularization_mu, axis=1)
-
-                h_pos = (1 - self.phi) * sparse_h_pos + self.phi * h_pos
-                h_pos_states = h_pos
-
             ## visable negative must be a function of hidden positive states
             v_neg = expit(numpy.dot(h_pos_states, self.components_.T) + self.intercept_visible_)
 
@@ -228,7 +231,7 @@ class RBM(BernoulliRBM):
         self.target_bias_ += lr_bias * (targets.sum(axis=0) - neg_lab_states.sum(axis=0))
         return err
 
-    def regularization(self, P, mu=0.1, axis=1):
+    def regularization(self, P, mu=0.1, sigma=0.0001, axis=1):
         """
         http://www-poleia.lip6.fr/~cord/Publications_files/NIPS2010_Goh.pdf
 
@@ -244,7 +247,8 @@ class RBM(BernoulliRBM):
             max_ranks = max_ranks.T
 
         ranks = (ranks - min_ranks) / (max_ranks - min_ranks)
-        ranks = ranks ** (1 / mu - 1)
+        ranks = 1 / (1 + numpy.exp(-(ranks - mu)/sigma))
+        #ranks = ranks ** (1 / mu - 1)
         return ranks
 
     def _mean_hiddens(self, v, targets=None):
@@ -291,11 +295,11 @@ class RBM(BernoulliRBM):
         for i in range(num):
             pyplot.subplot(w, h, i + 1)
             X = normalized_components[:, random.randint(0, normalized_components.shape[1]-1)].reshape(size, size)
-            pyplot.imshow(X.T, cmap=cm.Greys_r, hold=False, vmin=0, vmax=1)
+            pyplot.imshow(X.T, cmap=cm.Greys_r, hold=False, vmin=0.1, vmax=1)
             pyplot.draw()
 
     def plot_hidden_units(self, vis, targets=None):
-        hid = self._mean_hiddens(vis, targets)
+        hid = self._mean_hiddens(vis[:int(self.n_components/4)], targets)
         pyplot.imshow(hid, cmap=cm.Greys_r)
         pyplot.draw()
 
