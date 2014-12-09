@@ -78,15 +78,15 @@ for j in range(temp_labels.shape[0]):
 
 mndata.test_labels = temp_labels
 
-img_num = 2000
+img_num = 20000
 test_num = 10000
 layers = 3
-components = [200, 400, 800]
-batch_size = 25
+components = [500, 500, 1000]
+batch_size = 30
 learning_rate = 0.1
 bias_learning_rate = 0.1
 epochs = 100
-sparsity = None
+sparsity = [0.01, None, None]
 
 train_img = mndata.train_images[:img_num] > 0.5
 train_lab = mndata.train_labels[:img_num]

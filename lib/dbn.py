@@ -11,6 +11,7 @@ import numpy
 import json
 
 class DeepBeliefNet:
+    #@TODO I don't like how this initalization is done!
     def __init__(self, num_layers, components, batch_size=100, learning_rate=0.1, bias_learning_rate=0.1, epochs=20,
                  sparsity_rate=None, phi_sparsity=0.99):
         try:
@@ -18,13 +19,14 @@ class DeepBeliefNet:
         except TypeError:
             raise TypeError("Number of layers must be an a number.")
 
-        try:
-            self.sparsity_rate = [sparsity_rate] * self.num_layers
-        except TypeError:
-            if len(sparsity_rate) != self.num_layers:
-                raise Exception(
-                    "Number of Components (%i) must be equal to the number of layers, %i" % (len(components), layers))
+        if len(sparsity_rate) == self.num_layers:
             self.sparsity_rate = sparsity_rate
+        else:
+            try:
+                self.sparsity_rate = [sparsity_rate] * self.num_layers
+            except TypeError:
+                raise Exception("Number of Components (%i) must be equal to the number of layers, %i" %
+                            (len(components), layers))
 
         try:
             self.components = [int(components)] * self.num_layers
