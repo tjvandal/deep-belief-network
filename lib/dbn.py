@@ -13,7 +13,7 @@ import json
 class DeepBeliefNet:
     #@TODO I don't like how this initalization is done!
     def __init__(self, num_layers, components, batch_size=100, learning_rate=0.1, bias_learning_rate=0.1, epochs=20,
-                 sparsity_rate=None, phi_sparsity=0.99):
+                 sparsity_rate=None, phi_sparsity=0.90):
         try:
             self.num_layers = int(num_layers)
         except TypeError:
