@@ -26,7 +26,7 @@ from matplotlib import cm
 class RBM(BernoulliRBM):
     def __init__(self, n_components=256, learning_rate=0.1, batch_size=10,
                  n_iter=10, verbose=0, random_state=None, learning_rate_bias=0.1,
-                 regularization_mu=None, weight_cost=0.0002, phi=0.5, plot_weights=False,
+                 regularization_mu=None, weight_cost=0.0002, phi=0.9, plot_weights=False,
                  plot_histograms=False, plot_reconstructed=False):
         BernoulliRBM.__init__(self, n_components, learning_rate, batch_size,
                               n_iter, verbose, random_state=random_state)
