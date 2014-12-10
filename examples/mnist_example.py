@@ -86,7 +86,7 @@ batch_size = 50
 learning_rate = 0.1
 bias_learning_rate = 0.1
 epochs = 100
-#sparsity = [0.01, None, None]
+sparsity = [0.01, None, None]
 
 train_img = mndata.train_images[:img_num] > 0.5
 train_lab = mndata.train_labels[:img_num]
