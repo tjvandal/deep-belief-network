@@ -1,3 +1,0 @@
-[submodule "src/python-mnist"]
-	path = src/python-mnist
-	url = https://github.com/sorki/python-mnist.git
