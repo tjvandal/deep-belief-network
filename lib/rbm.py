@@ -26,7 +26,7 @@ from matplotlib import cm
 class RBM(BernoulliRBM):
     def __init__(self, n_components=256, learning_rate=0.1, batch_size=10,
                  n_iter=10, verbose=0, random_state=None, learning_rate_bias=0.1,
-                 regularization_mu=None, weight_cost=0.0002, phi=0.9, plot_weights=False,
+                 regularization_mu=None, weight_cost=0.0002, phi=0.5, plot_weights=False,
                  plot_histograms=False, plot_reconstructed=False):
         BernoulliRBM.__init__(self, n_components, learning_rate, batch_size,
                               n_iter, verbose, random_state=random_state)
@@ -363,7 +363,6 @@ def generate_batch_slices(targets, batch_size):
             batch_slices.append(slice)
 
     return batch_slices
-<<<<<<< HEAD
 
 
 def generate_random_batches(targets, batch_size):
@@ -382,5 +381,3 @@ def plot_histogram(data, bin_count=50):
     width = 0.7 * (bins[1] - bins[0])
     center = (bins[:-1] + bins[1:]) / 2
     pyplot.bar(center, 1.*hist/sum(hist), align='center', width=width, hold=False)
-=======
->>>>>>> 99f18ee62796ae890f931a6dbf8a5a16e8c32db3

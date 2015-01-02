@@ -11,67 +11,8 @@ import numpy
 import json
 
 class DeepBeliefNet:
-<<<<<<< HEAD
     def __init__(self, num_layers=1, components=500, batch_size=100, learning_rate=0.1, bias_learning_rate=0.1, epochs=20,
                  sparsity_rate=None, phi_sparsity=0.99):
-=======
-    #@TODO I don't like how this initalization is done!
-    def __init__(self, num_layers, components, batch_size=100, learning_rate=0.1, bias_learning_rate=0.1, epochs=20,
-                 sparsity_rate=None, phi_sparsity=0.90):
-        try:
-            self.num_layers = int(num_layers)
-        except TypeError:
-            raise TypeError("Number of layers must be an a number.")
-
-        if len(sparsity_rate) == self.num_layers:
-            self.sparsity_rate = sparsity_rate
-        else:
-            try:
-                self.sparsity_rate = [sparsity_rate] * self.num_layers
-            except TypeError:
-                raise Exception("Number of Components (%i) must be equal to the number of layers, %i" %
-                            (len(components), layers))
-
-        try:
-            self.components = [int(components)] * self.num_layers
-        except TypeError:
-            if len(components) != self.num_layers:
-                raise Exception(
-                    "Number of Components (%i) must be equal to the number of layers, %i" % (len(components), layers))
-            self.components = components
-
-        try:
-            self.batch_size = [int(batch_size)] * self.num_layers
-        except TypeError:
-            if len(batch_size) != self.num_layers:
-                raise Exception(
-                    "Number of batches (%i) must be equal to the number of layers, %i" % (len(batch_size), layers))
-            self.batch_size = batch_size
-
-        try:
-            self.learning_rate = [float(learning_rate)] * self.num_layers
-        except TypeError:
-            if len(learning_rate) != self.num_layers:
-                raise Exception("Number of learning rates (%i) must be equal to the number of layers, %i" % (
-                    len(learning_rate), layers))
-            self.learning_rate = learning_rate
-
-        try:
-            self.bias_learning_rate = [float(bias_learning_rate)] * self.num_layers
-        except TypeError:
-            if len(bias_learning_rate) != self.num_layers:
-                raise Exception("Number of Bias Learning Rates (%i) must be equal to the number of layers, %i" % (
-                    len(bias_learning_rate), layers))
-            self.bias_learning_rate = bias_learning_rate
-
-        try:
-            self.epochs = [int(epochs)] * self.num_layers
-        except TypeError:
-            if len(epochs) != self.num_layers:
-                raise Exception(
-                    "Number of Epochs (%i) must be equal to the number of layers, %i" % (len(epochs), layers))
-            self.epochs = epochs
->>>>>>> 99f18ee62796ae890f931a6dbf8a5a16e8c32db3
 
         self.num_layers = int(num_layers)
         self.sparsity_rate = self.check_input_float(sparsity_rate, allownull=True)
