@@ -78,11 +78,11 @@ for j in range(temp_labels.shape[0]):
 
 mndata.test_labels = temp_labels
 
-img_num = 20000
+img_num = 60000
 test_num = 10000
 layers = 3
-components = [500, 500, 1000]
-batch_size = 30
+components = [1000, 1000, 1000]
+batch_size = 50
 learning_rate = 0.1
 bias_learning_rate = 0.1
 epochs = 100
