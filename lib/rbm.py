@@ -165,8 +165,8 @@ class RBM(BernoulliRBM):
         neg_lab_states = numpy.zeros(self.target_bias_matrix.shape, dtype=float)
 
         if backprop:
-            temp_h_pos = h_pos
-            pos_hid_states = h_pos_states
+            temp_h_pos = h_pos.copy()
+            pos_hid_states = h_pos_states.copy()
             for j in range(self.cd_iter):
                 ## positive hidden label states from previous positive hidden probabilities
                 neg_lab_prob = numpy.exp(numpy.dot(pos_hid_states, self.target_components_.T) + self.target_bias_matrix)
